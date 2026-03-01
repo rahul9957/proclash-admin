@@ -5873,7 +5873,8 @@
                             admin_actions: true,
                             team_entries: true,
                             create_transaction_history: true,
-                            create_mini_admin: true
+                            create_mini_admin: true,
+                            retention: true
                         };
                         setUserPermissions(allPermissions);
                         return;
@@ -5911,7 +5912,8 @@
                             team_entries: true,
                             create_transaction_history: true,
                             create_mini_admin: true,
-                            referrals: true
+                            referrals: true,
+                            retention: true
                         };
                         setUserPermissions(allPermissions);
                     }
@@ -6011,6 +6013,7 @@
                 case 'send_notifications': return <SendNotifications />;
                 case 'create_mini_admin': return <CreateMiniAdmin />;
                 case 'referrals': return <ReferralManagement />;
+                case 'retention': return <RetentionAdmin />;
                 default: return <Dashboard users={users} loading={usersLoading} />;
             }
         };
@@ -6028,7 +6031,7 @@
                         </div>
                     </div>
                     <nav className="flex flex-col gap-2">
-                        {['Dashboard', 'Users', 'Wallet Requests', 'Tournaments', 'Live Joins', 'Support Tickets', 'Messages', 'Transactions', 'Game Profiles', 'App Settings', 'App Config', 'Admin Actions', 'Team Entries', 'Create Transaction History', 'Send Notifications', 'Create Mini Admin', 'Referrals'].filter(tab => {
+                        {['Dashboard', 'Users', 'Wallet Requests', 'Tournaments', 'Live Joins', 'Support Tickets', 'Messages', 'Transactions', 'Game Profiles', 'App Settings', 'App Config', 'Admin Actions', 'Team Entries', 'Create Transaction History', 'Send Notifications', 'Create Mini Admin', 'Referrals', 'Retention'].filter(tab => {
                             const tabKey = tab.toLowerCase().replace(/ /g, '_');
                             // Show all tabs for main admin, only permitted tabs for mini admin
                             return isMainAdmin || userPermissions[tabKey] || tabKey === 'dashboard';
