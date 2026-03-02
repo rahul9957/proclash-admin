@@ -13,19 +13,17 @@
  * - Manual Override Tools
  */
 
-const { useState, useEffect, useCallback } = React;
-
 // ============================================
 // MAIN RETENTION ADMIN COMPONENT
 // ============================================
 
 const RetentionSystemAdmin = () => {
-  const [activeTab, setActiveTab] = useState('analytics');
-  const [isLoading, setIsLoading] = useState(false);
-  const [notification, setNotification] = useState(null);
+  const [activeTab, setActiveTab] = React.useState('analytics');
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [notification, setNotification] = React.useState(null);
 
   // Global stats for the dashboard
-  const [globalStats, setGlobalStats] = useState({
+  const [globalStats, setGlobalStats] = React.useState({
     totalUsers: 0,
     dau: 0,
     totalDeposits: 0,
@@ -37,7 +35,7 @@ const RetentionSystemAdmin = () => {
   });
 
   // Auto-refresh stats every 30 seconds
-  useEffect(() => {
+  React.useEffect(() => {
     fetchGlobalStats();
     const interval = setInterval(fetchGlobalStats, 30000);
     return () => clearInterval(interval);
@@ -225,10 +223,10 @@ const TabButton = ({ active, onClick, label }) =>
 // ============================================
 
 const AnalyticsDashboard = ({ stats }) => {
-  const [timeRange, setTimeRange] = useState('7d');
-  const [chartData, setChartData] = useState([]);
+  const [timeRange, setTimeRange] = React.useState('7d');
+  const [chartData, setChartData] = React.useState([]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchChartData();
   }, [timeRange]);
 
@@ -368,11 +366,11 @@ const MetricCard = ({ title, value, change, positive }) =>
 // ============================================
 
 const SegmentControlPanel = ({ showNotification }) => {
-  const [searchEmail, setSearchEmail] = useState('');
-  const [userData, setUserData] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [selectedSegment, setSelectedSegment] = useState('');
-  const [overrideReason, setOverrideReason] = useState('');
+  const [searchEmail, setSearchEmail] = React.useState('');
+  const [userData, setUserData] = React.useState(null);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [selectedSegment, setSelectedSegment] = React.useState('');
+  const [overrideReason, setOverrideReason] = React.useState('');
 
   const searchUser = async () => {
     if (!searchEmail.trim()) return;
@@ -549,13 +547,13 @@ const SegmentControlPanel = ({ showNotification }) => {
 // ============================================
 
 const CampaignManager = ({ showNotification }) => {
-  const [campaigns, setCampaigns] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingCampaign, setEditingCampaign] = useState(null);
+  const [campaigns, setCampaigns] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [showCreateModal, setShowCreateModal] = React.useState(false);
+  const [editingCampaign, setEditingCampaign] = React.useState(null);
 
   // Form state
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = React.useState({
     name: '',
     description: '',
     bonusPercent: 10,
@@ -567,7 +565,7 @@ const CampaignManager = ({ showNotification }) => {
     autoApply: true,
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadCampaigns();
   }, []);
 
@@ -870,7 +868,7 @@ const CampaignManager = ({ showNotification }) => {
 // ============================================
 
 const EconomySettings = ({ showNotification }) => {
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = React.useState({
     entryFeeMultiplier: 1.0,
     cashbackPercent: 25,
     killRewardBase: 10,
@@ -880,9 +878,9 @@ const EconomySettings = ({ showNotification }) => {
     churnRecoveryEnabled: true,
     autoThrottleEnabled: true,
   });
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, setIsSaving] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadSettings();
   }, []);
 
@@ -1053,9 +1051,9 @@ const EconomySettings = ({ showNotification }) => {
 // ============================================
 
 const ProfitMonitorPanel = ({ stats }) => {
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = React.useState([]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadHistory();
   }, []);
 
@@ -1218,4 +1216,4 @@ const ProfitMonitorPanel = ({ stats }) => {
 };
 
 // Make component available globally
-window.RetentionSystemAdmin = RetentionSystemAdmin;
+window.RetentionAdmin = RetentionSystemAdmin;
