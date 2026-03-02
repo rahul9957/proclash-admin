@@ -3320,6 +3320,11 @@
                             <TextInput value={androidConfig.updateUrl || ''} onChange={e => handleAndroidChange('updateUrl', e.target.value)} />
                         </div>
                         <div>
+                            <label className="text-sm font-medium text-gray-700">Referral Website Download URL</label>
+                            <TextInput value={androidConfig.referralDownloadUrl || ''} onChange={e => handleAndroidChange('referralDownloadUrl', e.target.value)} placeholder="https://play.google.com/store/apps/details?id=..." />
+                            <p className="text-xs text-gray-500 mt-1">This URL is used on the referral landing page download buttons</p>
+                        </div>
+                        <div>
                             <label className="flex items-center">
                                 <input type="checkbox" checked={androidConfig.forceUpdate || false} onChange={e => handleAndroidChange('forceUpdate', e.target.checked)} className="h-4 w-4 rounded" />
                                 <span className="ml-2 text-sm">Force Update</span>
