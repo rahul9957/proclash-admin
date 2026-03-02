@@ -15,6 +15,112 @@ class ReferralCodeFixTool {
         this.errors = [];
     }
 
+    async getUserDoc(userId) {
+        const userDoc = await this.db.collection('users').doc(userId).get();
+        return userDoc.exists ? userDoc : null;
+    }
+
+    async getStatsDoc(userId) {
+        const statsDoc = await this.db.collection('user_referral_stats').doc(userId).get();
+        return statsDoc.exists ? statsDoc : null;
+    }
+
+    async getOriginalCodeFromReferralsHistory(userId) {
+        try {
+            const snap = await this.db.collection('referrals')
+                .where('referrerId', '==', userId)
+                .orderBy('createdAt', 'asc')
+                .limit(1)
+                .get();
+
+            if (snap.empty) return null;
+            const data = snap.docs[0].data();
+            const code = data.referralCode;
+            return (code && typeof code === 'string' && code.trim()) ? code.trim().toUpperCase() : null;
+        } catch (e) {
+            // If the index/orderBy isn't available, we still don't want to crash the tool.
+            console.warn('⚠️ Could not read referrals history for user', userId, e);
+            return null;
+        }
+    }
+
+    async syncStatsCodeToUserDoc(userId) {
+        try {
+            const statsDoc = await this.getStatsDoc(userId);
+            if (!statsDoc) return false;
+
+            const statsData = statsDoc.data() || {};
+            const statsCode = statsData.referralCode;
+            if (!statsCode) return false;
+
+            const userDoc = await this.getUserDoc(userId);
+            if (!userDoc) return false;
+
+            const userData = userDoc.data() || {};
+            const userCode = userData.referralCode;
+            if (userCode === statsCode) return true;
+
+            const batch = this.db.batch();
+            batch.update(this.db.collection('users').doc(userId), {
+                referralCode: statsCode,
+                referralInitialized: true,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            await batch.commit();
+
+            this.fixedCount++;
+            console.log(`✅ Synced users.referralCode from stats for ${userId}: ${statsCode}`);
+            return true;
+        } catch (e) {
+            console.error('❌ syncStatsCodeToUserDoc failed:', userId, e);
+            this.errors.push({ userId, error: e.message || String(e) });
+            return false;
+        }
+    }
+
+    async recoverUserReferralCode(userId) {
+        try {
+            const statsDoc = await this.getStatsDoc(userId);
+            const userDoc = await this.getUserDoc(userId);
+
+            const statsCode = statsDoc?.data()?.referralCode;
+            const userCode = userDoc?.data()?.referralCode;
+
+            let candidate = null;
+
+            if (statsCode && typeof statsCode === 'string' && statsCode.trim()) {
+                candidate = statsCode.trim().toUpperCase();
+            } else if (userCode && typeof userCode === 'string' && userCode.trim()) {
+                candidate = userCode.trim().toUpperCase();
+            } else {
+                candidate = await this.getOriginalCodeFromReferralsHistory(userId);
+            }
+
+            if (!candidate) {
+                candidate = await this.generateUniqueCode();
+            }
+
+            return await this.fixUserReferralCode(userId, candidate);
+        } catch (e) {
+            console.error('❌ recoverUserReferralCode failed:', userId, e);
+            this.errors.push({ userId, error: e.message || String(e) });
+            return false;
+        }
+    }
+
+    async recoverAllFromMismatchesPreferStats() {
+        const mismatches = await this.findMismatchedCodes();
+        for (const m of mismatches) {
+            // Prefer statsCode when present, otherwise fall back to recovery logic.
+            if (m.statsCode && typeof m.statsCode === 'string' && m.statsCode.trim()) {
+                await this.fixUserReferralCode(m.userId, m.statsCode.trim().toUpperCase());
+            } else {
+                await this.recoverUserReferralCode(m.userId);
+            }
+        }
+        return this.getReport();
+    }
+
     /**
      * Find all users who have mismatched referral codes
      * Compares user_referral_stats with users collection

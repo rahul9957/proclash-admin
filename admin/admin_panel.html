@@ -588,6 +588,57 @@
             }
         };
 
+        const recoverAllMismatches = async () => {
+            if (!fixTool) {
+                alert('Referral fix tool not loaded. Please refresh the page.');
+                return;
+            }
+
+            const ok = confirm('Recover ALL mismatched referral codes? This will set users.referralCode and stats.referralCode to the recovered/original value.');
+            if (!ok) return;
+
+            setFixLoading(true);
+            try {
+                const report = await fixTool.recoverAllFromMismatchesPreferStats();
+                alert(`✅ Recovery complete. Fixed: ${report.fixedCount}. Errors: ${report.errors.length}`);
+                const results = await fixTool.findMismatchedCodes();
+                setMismatches(results);
+            } catch (e) {
+                console.error(e);
+                alert('Failed to recover mismatches. See console for details.');
+            } finally {
+                setFixLoading(false);
+            }
+        };
+
+        const syncFirstMismatchStatsToUser = async () => {
+            if (!fixTool) {
+                alert('Referral fix tool not loaded. Please refresh the page.');
+                return;
+            }
+            if (!mismatches.length) {
+                alert('No mismatches loaded. Run Scan Mismatches first.');
+                return;
+            }
+
+            const target = mismatches[0];
+            const ok = confirm(`Sync stats.referralCode -> users.referralCode for first mismatch?\nUser: ${target.email || target.userId}`);
+            if (!ok) return;
+
+            setFixLoading(true);
+            try {
+                await fixTool.syncStatsCodeToUserDoc(target.userId);
+                const results = await fixTool.findMismatchedCodes();
+                setMismatches(results);
+                alert('✅ Sync complete for 1 user (first mismatch).');
+            } catch (e) {
+                console.error(e);
+                alert('Failed to sync. See console for details.');
+            } finally {
+                setFixLoading(false);
+            }
+        };
+
         const handleNotesChange = (e) => {
             setNotes(e.target.value);
         };
@@ -5562,6 +5613,20 @@
                                         className="btn-secondary text-sm py-2 px-4"
                                     >
                                         Scan Duplicates
+                                    </button>
+                                    <button
+                                        onClick={recoverAllMismatches}
+                                        disabled={fixLoading}
+                                        className="btn-secondary text-sm py-2 px-4"
+                                    >
+                                        Recover All Mismatches
+                                    </button>
+                                    <button
+                                        onClick={syncFirstMismatchStatsToUser}
+                                        disabled={fixLoading}
+                                        className="btn-secondary text-sm py-2 px-4"
+                                    >
+                                        Sync 1 (Stats→User)
                                     </button>
                                     <button
                                         onClick={fixAllDuplicates}
