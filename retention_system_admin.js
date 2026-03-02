@@ -13,6 +13,8 @@
  * - Manual Override Tools
  */
 
+const el = React.createElement;
+
 // ============================================
 // MAIN RETENTION ADMIN COMPONENT
 // ============================================
