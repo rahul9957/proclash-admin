@@ -137,26 +137,26 @@ const RetentionSystemAdmin = () => {
 
     // Quick Stats Row
     el('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4 mb-6' },
-      el(StatCard, {
+      el(RetentionStatCard, {
         title: 'Total Users',
         value: globalStats.totalUsers.toLocaleString(),
         icon: '👥',
         color: 'blue',
       }),
-      el(StatCard, {
+      el(RetentionStatCard, {
         title: 'Daily Active',
         value: globalStats.dau.toLocaleString(),
         icon: '📱',
         color: 'green',
       }),
-      el(StatCard, {
+      el(RetentionStatCard, {
         title: 'Bonus Ratio',
         value: `${globalStats.bonusRatio.toFixed(2)}%`,
         icon: '💰',
         color: globalStats.bonusRatio > 14 ? 'red' : globalStats.bonusRatio > 12 ? 'yellow' : 'green',
         subtext: '/ 15% max',
       }),
-      el(StatCard, {
+      el(RetentionStatCard, {
         title: 'Status',
         value: globalStats.profitStatus,
         icon: globalStats.isRedAlert ? '🔴' : globalStats.isThrottled ? '🟡' : '🟢',
@@ -188,7 +188,7 @@ const RetentionSystemAdmin = () => {
 // SUB-COMPONENTS
 // ============================================
 
-const StatCard = ({ title, value, icon, color, subtext }) => {
+const RetentionStatCard = ({ title, value, icon, color, subtext }) => {
   const colorClasses = {
     blue: 'bg-blue-900/50 border-blue-500',
     green: 'bg-green-900/50 border-green-500',
@@ -1096,25 +1096,25 @@ const ProfitMonitorPanel = ({ stats }) => {
       el('h3', { className: 'text-xl font-bold text-white mb-4' }, 'Profit Protection Monitor'),
       
       el('div', { className: 'grid grid-cols-2 md:grid-cols-4 gap-4 mb-6' },
-        el(StatCard, {
+        el(RetentionStatCard, {
           title: 'Total Deposits',
           value: `₹${(stats.totalDeposits || 0).toLocaleString()}`,
           icon: '💰',
           color: 'blue',
         }),
-        el(StatCard, {
+        el(RetentionStatCard, {
           title: 'Total Bonuses',
           value: `₹${(stats.totalDeposits * (stats.bonusRatio / 100) || 0).toLocaleString()}`,
           icon: '🎁',
           color: 'purple',
         }),
-        el(StatCard, {
+        el(RetentionStatCard, {
           title: 'Current Ratio',
           value: `${(stats.bonusRatio || 0).toFixed(2)}%`,
           icon: '📊',
           color: stats.bonusRatio > 14 ? 'red' : stats.bonusRatio > 12 ? 'yellow' : 'green',
         }),
-        el(StatCard, {
+        el(RetentionStatCard, {
           title: 'Remaining Budget',
           value: `₹${((stats.totalDeposits * 0.15) - (stats.totalDeposits * (stats.bonusRatio / 100)) || 0).toLocaleString()}`,
           icon: '💵',
