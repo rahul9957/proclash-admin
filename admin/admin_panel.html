@@ -18,6 +18,7 @@
     <!-- Admin Panel Components -->
     <script src="../leaderboard.js"></script>
     <script src="../retention_system_admin.js"></script>
+    <script src="./referral_code_fix.js"></script>
 
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -5118,8 +5119,22 @@
         const [selectedTab, setSelectedTab] = useState('referrals');
         const [statusFilter, setStatusFilter] = useState('all');
         const [searchTerm, setSearchTerm] = useState('');
+        const [fixTool, setFixTool] = useState(null);
+        const [mismatches, setMismatches] = useState([]);
+        const [duplicates, setDuplicates] = useState([]);
+        const [fixLoading, setFixLoading] = useState(false);
 
         useEffect(() => {
+            try {
+                if (window.ReferralCodeFixTool) {
+                    setFixTool(new window.ReferralCodeFixTool(db));
+                } else {
+                    console.warn('⚠️ ReferralCodeFixTool not loaded. Check referral_code_fix.js script include.');
+                }
+            } catch (e) {
+                console.error('❌ Failed to init ReferralCodeFixTool:', e);
+            }
+
             const unsubscribeReferrals = db.collection('referrals')
                 .orderBy('createdAt', 'desc')
                 .onSnapshot(async (snapshot) => {
@@ -5194,6 +5209,63 @@
                 unsubscribeStats();
             };
         }, []);
+
+        const runMismatchScan = async () => {
+            if (!fixTool) {
+                alert('Referral fix tool not loaded. Please refresh the page.');
+                return;
+            }
+            setFixLoading(true);
+            try {
+                const results = await fixTool.findMismatchedCodes();
+                setMismatches(results);
+            } catch (e) {
+                console.error(e);
+                alert('Failed to scan mismatches. See console for details.');
+            } finally {
+                setFixLoading(false);
+            }
+        };
+
+        const runDuplicateScan = async () => {
+            if (!fixTool) {
+                alert('Referral fix tool not loaded. Please refresh the page.');
+                return;
+            }
+            setFixLoading(true);
+            try {
+                const results = await fixTool.findDuplicateCodes();
+                setDuplicates(results);
+            } catch (e) {
+                console.error(e);
+                alert('Failed to scan duplicates. See console for details.');
+            } finally {
+                setFixLoading(false);
+            }
+        };
+
+        const fixAllDuplicates = async () => {
+            if (!fixTool) {
+                alert('Referral fix tool not loaded. Please refresh the page.');
+                return;
+            }
+            const ok = confirm('Fix ALL duplicate referral codes? This will generate new codes for some users.');
+            if (!ok) return;
+
+            setFixLoading(true);
+            try {
+                await fixTool.fixAllDuplicates();
+                const report = fixTool.getReport();
+                alert(`✅ Done. Fixed: ${report.fixedCount}. Errors: ${report.errors.length}`);
+                const results = await fixTool.findDuplicateCodes();
+                setDuplicates(results);
+            } catch (e) {
+                console.error(e);
+                alert('Failed to fix duplicates. See console for details.');
+            } finally {
+                setFixLoading(false);
+            }
+        };
 
         const getStatusBadge = (status) => {
             const statusStyles = {
@@ -5272,6 +5344,16 @@
                             }`}
                         >
                             Top Referrers
+                        </button>
+                        <button
+                            onClick={() => setSelectedTab('fix_tool')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                selectedTab === 'fix_tool' 
+                                    ? 'bg-blue-600 text-white' 
+                                    : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                        >
+                            Referral Code Fix
                         </button>
                     </div>
                 </div>
@@ -5453,6 +5535,115 @@
                                         No referral statistics available.
                                     </div>
                                 )}
+                            </div>
+                        </div>
+                    </Card>
+                )}
+
+                {selectedTab === 'fix_tool' && (
+                    <Card>
+                        <div className="p-6 space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-white">Referral Code Fix Tool</h3>
+                                    <p className="text-sm text-gray-400 mt-1">Use this to scan for mismatched / duplicate referral codes and fix duplicates.</p>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={runMismatchScan}
+                                        disabled={fixLoading}
+                                        className="btn-secondary text-sm py-2 px-4"
+                                    >
+                                        Scan Mismatches
+                                    </button>
+                                    <button
+                                        onClick={runDuplicateScan}
+                                        disabled={fixLoading}
+                                        className="btn-secondary text-sm py-2 px-4"
+                                    >
+                                        Scan Duplicates
+                                    </button>
+                                    <button
+                                        onClick={fixAllDuplicates}
+                                        disabled={fixLoading}
+                                        className="btn-primary text-sm py-2 px-4"
+                                    >
+                                        Fix All Duplicates
+                                    </button>
+                                </div>
+                            </div>
+
+                            {fixLoading && (
+                                <div className="flex items-center gap-3 text-gray-300">
+                                    <div className="spinner w-5 h-5"></div>
+                                    <span>Working...</span>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <div className="bg-gray-900/30 border border-white/10 rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-semibold text-white">Mismatches</h4>
+                                        <span className="text-sm text-gray-400">{mismatches.length}</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-b border-gray-800">
+                                                    <th className="text-left py-2 pr-2 text-gray-300">User</th>
+                                                    <th className="text-left py-2 pr-2 text-gray-300">users.referralCode</th>
+                                                    <th className="text-left py-2 pr-2 text-gray-300">stats.referralCode</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {mismatches.map((m) => (
+                                                    <tr key={m.userId} className="border-b border-gray-900/60">
+                                                        <td className="py-2 pr-2 text-gray-300">{m.email || m.userName || m.userId}</td>
+                                                        <td className="py-2 pr-2 font-mono text-gray-300">{m.userCode || '-'}</td>
+                                                        <td className="py-2 pr-2 font-mono text-gray-300">{m.statsCode || '-'}</td>
+                                                    </tr>
+                                                ))}
+                                                {mismatches.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="3" className="py-4 text-center text-gray-500">No mismatches scanned / found.</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="bg-gray-900/30 border border-white/10 rounded-xl p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <h4 className="font-semibold text-white">Duplicates</h4>
+                                        <span className="text-sm text-gray-400">{duplicates.length}</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-b border-gray-800">
+                                                    <th className="text-left py-2 pr-2 text-gray-300">Code</th>
+                                                    <th className="text-left py-2 pr-2 text-gray-300">Users</th>
+                                                    <th className="text-left py-2 pr-2 text-gray-300">Count</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {duplicates.map((d) => (
+                                                    <tr key={d.code} className="border-b border-gray-900/60">
+                                                        <td className="py-2 pr-2 font-mono text-gray-300">{d.code}</td>
+                                                        <td className="py-2 pr-2 text-gray-300">{(d.userIds || []).slice(0, 3).join(', ')}{(d.userIds || []).length > 3 ? ' ...' : ''}</td>
+                                                        <td className="py-2 pr-2 text-gray-300">{d.count}</td>
+                                                    </tr>
+                                                ))}
+                                                {duplicates.length === 0 && (
+                                                    <tr>
+                                                        <td colSpan="3" className="py-4 text-center text-gray-500">No duplicates scanned / found.</td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </Card>

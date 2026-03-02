@@ -245,6 +245,11 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = ReferralCodeFixTool;
 }
 
+// Browser global export (admin_panel.html loads scripts directly in browser)
+if (typeof window !== 'undefined') {
+    window.ReferralCodeFixTool = ReferralCodeFixTool;
+}
+
 // Example usage in admin panel console:
 /*
 const fixTool = new ReferralCodeFixTool(db);
