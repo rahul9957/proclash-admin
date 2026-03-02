@@ -45,11 +45,6 @@ const RetentionSystemAdmin = () => {
 
   const fetchGlobalStats = async () => {
     try {
-      if (typeof RetentionScoreEngine === 'undefined' || typeof ProfitProtectionMonitor === 'undefined') {
-        console.warn('⚠️ Retention engines not loaded (RetentionScoreEngine / ProfitProtectionMonitor). Retention dashboard will show limited data.');
-        return;
-      }
-
       // Get segment distribution
       const segmentDist = await RetentionScoreEngine.getSegmentDistribution();
       
@@ -57,19 +52,19 @@ const RetentionSystemAdmin = () => {
       const profitStatus = await ProfitProtectionMonitor.getStatusForDashboard();
       
       // Get total user count
-      // NOTE: Aggregate count() may not be available / can trigger errors on some setups.
-      const usersSnapshot = await db.collection('users').get();
+      const usersSnapshot = await db.collection('users').count().get();
       
       // Get DAU (users active today)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const dauSnapshot = await db.collection('users')
         .where('lastActiveAt', '>=', today)
+        .count()
         .get();
       
       setGlobalStats({
-        totalUsers: usersSnapshot.size || 0,
-        dau: dauSnapshot.size || 0,
+        totalUsers: usersSnapshot.data().count || 0,
+        dau: dauSnapshot.data().count || 0,
         totalDeposits: profitStatus['totalDeposits'] || 0,
         bonusRatio: profitStatus['bonusRatio'] || 0,
         segmentDistribution: segmentDist,
